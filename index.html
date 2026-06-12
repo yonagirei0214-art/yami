@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>景品振り分けツール</title>
+<style>
+  :root {
+    --bg: #0a0c14;
+    --surface: #111827;
+    --surface2: #1a2235;
+    --border: #1e3a5f;
+    --accent: #00d4ff;
+    --accent2: #7c3aed;
+    --text: #e2e8f0;
+    --text-muted: #64748b;
+    --danger: #ef4444;
+    --success: #22c55e;
+    --warn: #f59e0b;
+    --radius: 10px;
+    --font: 'Segoe UI', 'Hiragino Sans', 'Yu Gothic', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    min-height: 100vh;
+    padding: 0 0 60px;
+  }
+
+  /* ===== HEADER ===== */
+  header {
+    background: linear-gradient(135deg, #0d1b2e 0%, #0a0c14 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 20px 24px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(10px);
+  }
+  header h1 {
+    font-size: clamp(16px, 4vw, 22px);
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  header p { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+  /* ===== MAIN LAYOUT ===== */
+  main { max-width: 900px; margin: 0 auto; padding: 24px 16px; }
+
+  section { margin-bottom: 32px; }
+
+  .section-title {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ===== DROP ZONE ===== */
+  #drop-zone {
+    border: 2px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 40px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--surface);
+    position: relative;
+  }
+  #drop-zone:hover, #drop-zone.dragover {
+    border-color: var(--accent);
+    background: #0d1b2e;
+  }
+  #drop-zone input[type="file"] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+  #drop-zone .drop-icon { font-size: 36px; margin-bottom: 12px; }
+  #drop-zone p { color: var(--text-muted); font-size: 14px; line-height: 1.6; }
+  #drop-zone .drop-hint { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
+
+  /* ===== STATUS BAR ===== */
+  #status-bar {
+    display: none;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    font-size: 13px;
+    color: var(--accent);
+    margin-bottom: 20px;
+  }
+
+  /* ===== GIFT LIST ===== */
+  #gift-section { display: none; }
+
+  .gift-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .gift-item {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    transition: border-color 0.2s;
+  }
+  .gift-item.has-file { border-color: var(--accent2); }
+
+  .gift-name {
+    font-size: 14px;
+    font-weight: 600;
+    word-break: break-all;
+  }
+  .gift-rarity {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .rarity-N  { background: #374151; color: #9ca3af; }
+  .rarity-R  { background: #1e3a5f; color: #60a5fa; }
+  .rarity-SR { background: #3b1f6e; color: #c084fc; }
+  .rarity-SSR { background: #7c2d12; color: #fb923c; }
+  .rarity-UR  { background: #7f1d1d; color: #fca5a5; }
+  .rarity-other { background: #1f2937; color: #94a3b8; }
+
+  .file-attach-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-size: 12px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .file-attach-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .file-attach-btn.attached { border-color: var(--success); color: var(--success); }
+  .file-attach-btn input[type="file"] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer;
+  }
+
+  .gift-filename {
+    grid-column: 1 / -1;
+    font-size: 11px;
+    color: var(--success);
+    padding-top: 2px;
+    display: none;
+  }
+  .gift-filename.show { display: block; }
+
+  /* ===== LISTENER LIST ===== */
+  #listener-section { display: none; }
+
+  .listener-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .listener-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .listener-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    cursor: pointer;
+    gap: 12px;
+  }
+  .listener-header:hover { background: var(--surface2); }
+
+  .listener-name {
+    font-size: 15px;
+    font-weight: 700;
+    flex: 1;
+  }
+  .listener-count {
+    font-size: 12px;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+  .listener-dl-btn {
+    background: var(--accent2);
+    color: #fff;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: opacity 0.2s;
+  }
+  .listener-dl-btn:hover { opacity: 0.85; }
+  .listener-dl-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .listener-gifts {
+    padding: 0 16px 14px;
+    border-top: 1px solid var(--border);
+  }
+
+  .listener-gift-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 4px 10px;
+    font-size: 12px;
+    margin: 6px 4px 0 0;
+  }
+  .listener-gift-tag.has-file { border-color: var(--accent2); color: var(--accent); }
+  .listener-gift-tag .tag-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--text-muted);
+    flex-shrink: 0;
+  }
+  .listener-gift-tag.has-file .tag-dot { background: var(--accent); }
+
+  /* collapse arrow */
+  .collapse-arrow {
+    font-size: 12px;
+    color: var(--text-muted);
+    transition: transform 0.2s;
+    flex-shrink: 0;
+  }
+  .listener-card.open .collapse-arrow { transform: rotate(180deg); }
+  .listener-gifts { display: none; }
+  .listener-card.open .listener-gifts { display: block; }
+
+  /* ===== BULK DL ===== */
+  #bulk-section { display: none; }
+
+  .bulk-dl-btn {
+    width: 100%;
+    background: linear-gradient(135deg, var(--accent2), #4f46e5);
+    border: none;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 700;
+    padding: 16px 24px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    letter-spacing: 0.05em;
+    transition: opacity 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .bulk-dl-btn:hover { opacity: 0.9; }
+  .bulk-dl-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ===== RESET ===== */
+  .reset-btn {
+    background: transparent;
+    border: 1px solid var(--danger);
+    color: var(--danger);
+    padding: 8px 20px;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    margin-top: 12px;
+    transition: all 0.2s;
+  }
+  .reset-btn:hover { background: var(--danger); color: #fff; }
+
+  /* ===== LOADING ===== */
+  .loading-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 999;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 16px;
+    font-size: 14px;
+    color: var(--accent);
+  }
+  .loading-overlay.show { display: flex; }
+  .spinner {
+    width: 40px; height: 40px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ===== TOAST ===== */
+  .toast {
+    position: fixed;
+    bottom: 24px; left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 13px;
+    transition: transform 0.3s;
+    z-index: 1000;
+    white-space: nowrap;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.success { border-color: var(--success); color: var(--success); }
+  .toast.error { border-color: var(--danger); color: var(--danger); }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 480px) {
+    .gift-item {
+      grid-template-columns: 1fr auto;
+    }
+    .gift-rarity { display: none; }
+    .listener-header { flex-wrap: wrap; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>景品振り分けツール</h1>
+  <p>闇ガチャCSVを読み込んで、リスナーごとに景品をまとめてDL</p>
+</header>
+
+<main>
+
+  <!-- STEP 1: CSV読み込み -->
+  <section>
+    <div class="section-title">STEP 1 ── CSV読み込み</div>
+    <div id="drop-zone">
+      <input type="file" id="csv-input" accept=".csv">
+      <div class="drop-icon">📂</div>
+      <p>CSVファイルをここにドロップ<br>またはタップして選択</p>
+      <p class="drop-hint">配信補助ツール（闇ガチャ）からエクスポートしたCSV</p>
+    </div>
+  </section>
+
+  <div id="status-bar"></div>
+
+  <!-- STEP 2: 景品一覧＋ファイル紐づけ -->
+  <section id="gift-section">
+    <div class="section-title">STEP 2 ── 景品にファイルを登録</div>
+    <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">
+      各景品にmp3・png・jpegなどのファイルを紐づけてください。未登録のままDLすることも可能です。
+    </p>
+    <div class="gift-list" id="gift-list"></div>
+  </section>
+
+  <!-- STEP 3: リスナー一覧 -->
+  <section id="listener-section">
+    <div class="section-title">STEP 3 ── リスナーごとに確認・DL</div>
+    <div class="listener-grid" id="listener-grid"></div>
+  </section>
+
+  <!-- STEP 4: 一括DL -->
+  <section id="bulk-section">
+    <div class="section-title">STEP 4 ── 全員まとめてDL</div>
+    <button class="bulk-dl-btn" id="bulk-dl-btn">
+      📦 全リスナーのZIPをまとめてダウンロード
+    </button>
+    <br>
+    <button class="reset-btn" id="reset-btn">🔄 リセットして最初から</button>
+  </section>
+
+</main>
+
+<div class="loading-overlay" id="loading">
+  <div class="spinner"></div>
+  <div id="loading-msg">ZIPを作成中...</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- JSZip CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+<script>
+// ===== STATE =====
+let giftMap = {};       // { giftName: { rarity, file } }
+let listenerMap = {};   // { listenerName: Set<giftName> }
+
+// ===== UTILS =====
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + type;
+  setTimeout(() => t.className = 'toast', 2500);
+}
+
+function showLoading(msg = 'ZIPを作成中...') {
+  document.getElementById('loading-msg').textContent = msg;
+  document.getElementById('loading').classList.add('show');
+}
+function hideLoading() {
+  document.getElementById('loading').classList.remove('show');
+}
+
+function rarityClass(r) {
+  const upper = (r || '').toUpperCase().trim();
+  if (['N'].includes(upper)) return 'rarity-N';
+  if (['R'].includes(upper)) return 'rarity-R';
+  if (['SR'].includes(upper)) return 'rarity-SR';
+  if (['SSR'].includes(upper)) return 'rarity-SSR';
+  if (['UR'].includes(upper)) return 'rarity-UR';
+  return 'rarity-other';
+}
+
+// ===== CSV PARSE =====
+function parseCSVLine(line) {
+  const cols = [];
+  let cur = '';
+  let inQuote = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (inQuote && line[i+1] === '"') { cur += '"'; i++; }
+      else inQuote = !inQuote;
+    } else if (ch === ',' && !inQuote) {
+      cols.push(cur.trim());
+      cur = '';
+    } else {
+      cur += ch;
+    }
+  }
+  cols.push(cur.trim());
+  return cols;
+}
+
+function parseCSV(text) {
+  // BOM除去・改行正規化
+  const clean = text.replace(/^\uFEFF/, '');
+  const lines = clean.trim().split(/\r?\n/);
+  const results = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    if (i === 0 && /リスナー|listener/i.test(line)) continue;
+    const cols = parseCSVLine(line);
+    if (cols.length < 3) continue;
+    const [listener, rarity, gift] = cols;
+    if (!listener || !gift) continue;
+    results.push({ listener, rarity: rarity || '', gift });
+  }
+  return results;
+}
+
+function buildMaps(rows) {
+  giftMap = {};
+  listenerMap = {};
+
+  for (const row of rows) {
+    const { listener, rarity, gift } = row;
+
+    // gift map
+    if (!giftMap[gift]) {
+      giftMap[gift] = { rarity, file: null };
+    }
+
+    // listener map (Set で重複除去)
+    if (!listenerMap[listener]) {
+      listenerMap[listener] = new Set();
+    }
+    listenerMap[listener].add(gift);
+  }
+}
+
+// ===== RENDER =====
+function renderAll(rows) {
+  renderStatus(rows);
+  renderGiftList();
+  renderListenerGrid();
+
+  document.getElementById('gift-section').style.display = '';
+  document.getElementById('listener-section').style.display = '';
+  document.getElementById('bulk-section').style.display = '';
+}
+
+function renderStatus(rows) {
+  const bar = document.getElementById('status-bar');
+  const listeners = Object.keys(listenerMap).length;
+  const gifts = Object.keys(giftMap).length;
+  bar.style.display = '';
+  bar.textContent = `✅ 読み込み完了 ── ${rows.length}行 / リスナー ${listeners}人 / 景品 ${gifts}種類`;
+}
+
+function renderGiftList() {
+  const el = document.getElementById('gift-list');
+  el.innerHTML = '';
+
+  for (const [name, info] of Object.entries(giftMap)) {
+    const item = document.createElement('div');
+    item.className = 'gift-item' + (info.file ? ' has-file' : '');
+    item.dataset.gift = name;
+
+    item.innerHTML = `
+      <div class="gift-name">${escHtml(name)}</div>
+      <span class="gift-rarity ${rarityClass(info.rarity)}">${escHtml(info.rarity || '?')}</span>
+      <label class="file-attach-btn ${info.file ? 'attached' : ''}">
+        ${info.file ? '✅ ' + escHtml(info.file.name) : '📎 ファイル選択'}
+        <input type="file" accept="audio/*,image/*,video/*,.zip,.pdf" data-gift="${escHtml(name)}">
+      </label>
+      <div class="gift-filename ${info.file ? 'show' : ''}">
+        ${info.file ? escHtml(info.file.name) : ''}
+      </div>
+    `;
+
+    const fileInput = item.querySelector('input[type="file"]');
+    fileInput.addEventListener('change', onGiftFileChange);
+
+    el.appendChild(item);
+  }
+}
+
+function onGiftFileChange(e) {
+  const giftName = e.target.dataset.gift;
+  const file = e.target.files[0];
+  if (!file || !giftMap[giftName]) return;
+
+  giftMap[giftName].file = file;
+
+  // update gift item UI
+  const item = document.querySelector(`.gift-item[data-gift="${CSS.escape(giftName)}"]`);
+  if (item) {
+    item.classList.add('has-file');
+    const btn = item.querySelector('.file-attach-btn');
+    btn.classList.add('attached');
+    btn.childNodes[0].textContent = '✅ ' + file.name;
+    const fn = item.querySelector('.gift-filename');
+    fn.textContent = file.name;
+    fn.classList.add('show');
+  }
+
+  // update listener tags
+  updateListenerTags(giftName);
+  showToast(`「${giftName}」にファイルを登録しました`, 'success');
+}
+
+function updateListenerTags(giftName) {
+  const allTags = document.querySelectorAll(`.listener-gift-tag[data-gift="${CSS.escape(giftName)}"]`);
+  const hasFile = !!giftMap[giftName]?.file;
+  allTags.forEach(tag => {
+    if (hasFile) tag.classList.add('has-file');
+    else tag.classList.remove('has-file');
+  });
+}
+
+function renderListenerGrid() {
+  const grid = document.getElementById('listener-grid');
+  grid.innerHTML = '';
+
+  for (const [name, gifts] of Object.entries(listenerMap)) {
+    const card = document.createElement('div');
+    card.className = 'listener-card';
+
+    const giftsArray = Array.from(gifts);
+
+    const tagsHtml = giftsArray.map(g => {
+      const hasFile = giftMap[g]?.file ? ' has-file' : '';
+      return `<span class="listener-gift-tag${hasFile}" data-gift="${escHtml(g)}">
+        <span class="tag-dot"></span>${escHtml(g)}
+      </span>`;
+    }).join('');
+
+    card.innerHTML = `
+      <div class="listener-header">
+        <span class="listener-name">${escHtml(name)}</span>
+        <span class="listener-count">${giftsArray.length}種類</span>
+        <button class="listener-dl-btn" data-listener="${escHtml(name)}">⬇ DL</button>
+        <span class="collapse-arrow">▼</span>
+      </div>
+      <div class="listener-gifts">
+        ${tagsHtml}
+      </div>
+    `;
+
+    // toggle open/close
+    card.querySelector('.listener-header').addEventListener('click', (e) => {
+      if (e.target.classList.contains('listener-dl-btn')) return;
+      card.classList.toggle('open');
+    });
+
+    // individual DL
+    card.querySelector('.listener-dl-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      downloadListenerZip(name);
+    });
+
+    grid.appendChild(card);
+  }
+}
+
+// ===== ZIP GENERATION =====
+async function buildListenerZip(listenerName) {
+  const zip = new JSZip();
+  const gifts = Array.from(listenerMap[listenerName] || []);
+  const seen = new Set();
+
+  for (const giftName of gifts) {
+    const info = giftMap[giftName];
+    if (!info?.file) continue;
+
+    let filename = info.file.name;
+    // 重複ファイル名対策
+    if (seen.has(filename)) {
+      const ext = filename.includes('.') ? '.' + filename.split('.').pop() : '';
+      const base = filename.slice(0, filename.length - ext.length);
+      let n = 2;
+      while (seen.has(`${base}_${n}${ext}`)) n++;
+      filename = `${base}_${n}${ext}`;
+    }
+    seen.add(filename);
+    zip.file(filename, info.file);
+  }
+
+  // 景品リストtxt
+  const listLines = gifts.map(g => {
+    const hasFile = !!giftMap[g]?.file;
+    return `${g}${hasFile ? '' : '　（ファイル未登録）'}`;
+  });
+  zip.file('景品リスト.txt', `${listenerName} さんへの景品\n\n` + listLines.join('\n'));
+
+  return zip;
+}
+
+async function downloadListenerZip(listenerName) {
+  showLoading(`${listenerName} さんのZIPを作成中...`);
+  try {
+    const zip = await buildListenerZip(listenerName);
+    const blob = await zip.generateAsync({ type: 'blob' });
+    triggerDownload(blob, `${listenerName}.zip`);
+    showToast(`${listenerName}.zip をダウンロードしました`, 'success');
+  } catch(e) {
+    showToast('ZIPの作成に失敗しました', 'error');
+    console.error(e);
+  } finally {
+    hideLoading();
+  }
+}
+
+async function downloadAllZip() {
+  showLoading('全リスナーのZIPを作成中...');
+  try {
+    const outerZip = new JSZip();
+
+    for (const listenerName of Object.keys(listenerMap)) {
+      const innerZip = await buildListenerZip(listenerName);
+      const innerBlob = await innerZip.generateAsync({ type: 'blob' });
+      outerZip.file(`${listenerName}.zip`, innerBlob);
+    }
+
+    const blob = await outerZip.generateAsync({ type: 'blob' });
+    triggerDownload(blob, '全リスナー景品.zip');
+    showToast('全リスナーのZIPをダウンロードしました', 'success');
+  } catch(e) {
+    showToast('ZIPの作成に失敗しました', 'error');
+    console.error(e);
+  } finally {
+    hideLoading();
+  }
+}
+
+function triggerDownload(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 3000);
+}
+
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ===== EVENT LISTENERS =====
+
+// Drop zone
+const dropZone = document.getElementById('drop-zone');
+const csvInput = document.getElementById('csv-input');
+
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file) handleCSVFile(file);
+});
+
+csvInput.addEventListener('change', e => {
+  if (e.target.files[0]) handleCSVFile(e.target.files[0]);
+});
+
+function handleCSVFile(file) {
+  if (!file.name.toLowerCase().endsWith('.csv')) {
+    showToast('CSVファイルを選択してください', 'error');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const rows = parseCSV(e.target.result);
+      if (rows.length === 0) {
+        showToast('有効なデータが見つかりませんでした', 'error');
+        return;
+      }
+      buildMaps(rows);
+      renderAll(rows);
+      showToast(`${rows.length}件のデータを読み込みました`, 'success');
+    } catch(err) {
+      showToast('CSVの解析に失敗しました', 'error');
+      console.error(err);
+    }
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+// Bulk DL
+document.getElementById('bulk-dl-btn').addEventListener('click', downloadAllZip);
+
+// Reset
+document.getElementById('reset-btn').addEventListener('click', () => {
+  if (!confirm('リセットしますか？読み込んだCSVと紐づけたファイルがすべて消えます。')) return;
+  giftMap = {};
+  listenerMap = {};
+  document.getElementById('status-bar').style.display = 'none';
+  document.getElementById('gift-section').style.display = 'none';
+  document.getElementById('listener-section').style.display = 'none';
+  document.getElementById('bulk-section').style.display = 'none';
+  document.getElementById('gift-list').innerHTML = '';
+  document.getElementById('listener-grid').innerHTML = '';
+  csvInput.value = '';
+  showToast('リセットしました');
+});
+
+</script>
+</body>
+</html>
