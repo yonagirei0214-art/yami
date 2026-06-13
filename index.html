@@ -16,6 +16,7 @@
     --text-muted: #64748b;
     --danger: #ef4444;
     --success: #22c55e;
+    --warn: #f59e0b;
     --radius: 10px;
     --font: 'Segoe UI', 'Hiragino Sans', 'Yu Gothic', sans-serif;
   }
@@ -25,56 +26,76 @@
   header {
     background: linear-gradient(135deg, #0d1b2e 0%, #0a0c14 100%);
     border-bottom: 1px solid var(--border);
-    padding: 20px 24px;
-    position: sticky; top: 0; z-index: 100;
+    padding: 20px 24px; position: sticky; top: 0; z-index: 100;
   }
   header h1 {
-    font-size: clamp(16px, 4vw, 22px); font-weight: 700; letter-spacing: .05em;
+    font-size: clamp(16px,4vw,22px); font-weight: 700; letter-spacing:.05em;
     background: linear-gradient(90deg, var(--accent), var(--accent2));
     -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
   }
   header p { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
 
   main { max-width: 900px; margin: 0 auto; padding: 24px 16px; }
-  section { margin-bottom: 32px; }
+  section { margin-bottom: 28px; }
 
   .section-title {
-    font-size: 13px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+    font-size: 13px; font-weight: 700; letter-spacing:.12em; text-transform: uppercase;
     color: var(--accent); margin-bottom: 12px;
     display: flex; align-items: center; gap: 8px;
   }
-  .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .section-title::after { content:''; flex:1; height:1px; background:var(--border); }
 
-  /* DROP ZONE */
+  /* ===== MODE TOGGLE ===== */
+  .mode-toggle-wrap {
+    display: flex; gap: 0; border: 1px solid var(--border);
+    border-radius: var(--radius); overflow: hidden; margin-bottom: 20px;
+  }
+  .mode-btn {
+    flex: 1; padding: 12px 8px; border: none; background: var(--surface);
+    color: var(--text-muted); font-size: 13px; font-weight: 700;
+    cursor: pointer; font-family: var(--font); transition: all .2s;
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    line-height: 1.3;
+  }
+  .mode-btn .mode-icon { font-size: 20px; }
+  .mode-btn.active {
+    background: linear-gradient(135deg, #0d2040, #1a1040);
+    color: var(--accent); border-bottom: 2px solid var(--accent);
+  }
+  .mode-btn:not(.active):hover { background: var(--surface2); color: var(--text); }
+
+  /* ===== CARD ===== */
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 16px;
+  }
+  .card + .card { margin-top: 12px; }
+  .card-label { font-size: 12px; font-weight: 900; color: var(--text-muted); letter-spacing:.08em; margin-bottom: 10px; }
+
+  /* ===== DROP ZONE ===== */
   .drop-area {
     border: 2px dashed var(--border); border-radius: var(--radius);
-    padding: 40px 24px; text-align: center; background: var(--surface);
-    transition: all .2s;
+    padding: 32px 24px; text-align: center; background: var(--surface); transition: all .2s;
   }
   .drop-area.dragover { border-color: var(--accent); background: #0d1b2e; }
-  .drop-area .drop-icon { font-size: 36px; margin-bottom: 12px; }
+  .drop-area .drop-icon { font-size: 32px; margin-bottom: 10px; }
   .drop-area p { color: var(--text-muted); font-size: 14px; line-height: 1.6; }
-  .drop-area .drop-hint { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
-
-  /* ファイル選択ボタン（モバイル対応） */
   .file-select-btn {
-    display: inline-block; margin-top: 16px;
+    display: inline-block; margin-top: 14px;
     background: var(--accent2); color: #fff;
     padding: 10px 24px; border-radius: 8px;
-    font-size: 14px; font-weight: 700; cursor: pointer;
-    transition: opacity .2s;
+    font-size: 14px; font-weight: 700; cursor: pointer; transition: opacity .2s;
   }
   .file-select-btn:hover { opacity: .85; }
 
-  /* STATUS BAR */
+  /* ===== STATUS BAR ===== */
   #status-bar {
     display: none; background: var(--surface2); border: 1px solid var(--border);
     border-radius: var(--radius); padding: 12px 16px;
     font-size: 13px; color: var(--accent); margin-bottom: 20px;
   }
 
-  /* GIFT LIST */
-  #gift-section { display: none; }
+  /* ===== GIFT ITEMS (共通) ===== */
   .gift-list { display: flex; flex-direction: column; gap: 8px; }
   .gift-item {
     display: grid; grid-template-columns: 1fr auto auto;
@@ -82,26 +103,29 @@
     background: var(--surface); border: 1px solid var(--border);
     border-radius: var(--radius); padding: 12px 14px; transition: border-color .2s;
   }
-  .gift-item.has-file { border-color: var(--accent2); }
+  .gift-item.has-file  { border-color: var(--accent2); }
+  .gift-item.matched   { border-color: var(--success); }
+  .gift-item.unmatched { border-color: var(--warn); }
   .gift-name { font-size: 14px; font-weight: 600; word-break: break-all; }
   .gift-rarity {
     font-size: 11px; padding: 2px 8px; border-radius: 20px;
     font-weight: 700; white-space: nowrap;
   }
-  .rarity-N   { background: #374151; color: #9ca3af; }
-  .rarity-R   { background: #1e3a5f; color: #60a5fa; }
-  .rarity-SR  { background: #3b1f6e; color: #c084fc; }
-  .rarity-SSR { background: #7c2d12; color: #fb923c; }
-  .rarity-UR  { background: #7f1d1d; color: #fca5a5; }
-  .rarity-other { background: #1f2937; color: #94a3b8; }
+  .rarity-N   { background:#374151; color:#9ca3af; }
+  .rarity-R   { background:#1e3a5f; color:#60a5fa; }
+  .rarity-SR  { background:#3b1f6e; color:#c084fc; }
+  .rarity-SSR { background:#7c2d12; color:#fb923c; }
+  .rarity-UR  { background:#7f1d1d; color:#fca5a5; }
+  .rarity-other { background:#1f2937; color:#94a3b8; }
+
   .gift-file-label {
     display: inline-flex; align-items: center; gap: 5px;
     background: var(--surface2); border: 1px solid var(--border);
     color: var(--text); font-size: 12px; padding: 6px 12px;
-    border-radius: 6px; cursor: pointer; white-space: nowrap; transition: all .2s;
-    font-family: var(--font);
+    border-radius: 6px; cursor: pointer; white-space: nowrap;
+    transition: all .2s; font-family: var(--font);
   }
-  .gift-file-label:hover { border-color: var(--accent); color: var(--accent); }
+  .gift-file-label:hover  { border-color: var(--accent); color: var(--accent); }
   .gift-file-label.attached { border-color: var(--success); color: var(--success); }
   .gift-filename {
     grid-column: 1 / -1; font-size: 11px; color: var(--success);
@@ -109,7 +133,40 @@
   }
   .gift-filename.show { display: block; }
 
-  /* LISTENER LIST */
+  /* 先登録モード専用: 追加フォーム */
+  .preset-add-row {
+    display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 12px;
+  }
+  .preset-name-input {
+    flex: 1; min-width: 120px; background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); padding: 10px 12px; border-radius: 8px;
+    font-size: 13px; font-family: var(--font); outline: none; transition: border-color .2s;
+  }
+  .preset-name-input:focus { border-color: var(--accent); }
+  .preset-add-btn {
+    background: var(--accent2); color: #fff; border: none;
+    padding: 10px 16px; border-radius: 8px; font-size: 13px; font-weight: 700;
+    cursor: pointer; font-family: var(--font); white-space: nowrap; transition: opacity .2s;
+  }
+  .preset-add-btn:hover { opacity: .85; }
+  .preset-del-btn {
+    background: transparent; border: 1px solid var(--danger); color: var(--danger);
+    width: 30px; height: 30px; border-radius: 6px; cursor: pointer;
+    font-size: 14px; display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: all .2s;
+  }
+  .preset-del-btn:hover { background: var(--danger); color: #fff; }
+
+  /* match badge */
+  .match-badge {
+    font-size: 10px; font-weight: 900; padding: 2px 7px;
+    border-radius: 20px; white-space: nowrap;
+  }
+  .match-badge.ok  { background: #14532d; color: var(--success); }
+  .match-badge.ng  { background: #78350f; color: var(--warn); }
+  .match-badge.pre { background: #1e1b4b; color: #a5b4fc; }
+
+  /* ===== LISTENER LIST ===== */
   #listener-section { display: none; }
   .listener-grid { display: flex; flex-direction: column; gap: 12px; }
   .listener-card {
@@ -136,24 +193,19 @@
   .listener-gift-tag {
     display: inline-flex; align-items: center; gap: 6px;
     background: var(--surface2); border: 1px solid var(--border);
-    border-radius: 20px; padding: 4px 10px; font-size: 12px;
-    margin: 6px 4px 0 0;
+    border-radius: 20px; padding: 4px 10px; font-size: 12px; margin: 6px 4px 0 0;
   }
   .listener-gift-tag.has-file { border-color: var(--accent2); color: var(--accent); }
-  .listener-gift-tag .tag-dot {
-    width: 6px; height: 6px; border-radius: 50%;
-    background: var(--text-muted); flex-shrink: 0;
-  }
+  .listener-gift-tag .tag-dot { width:6px; height:6px; border-radius:50%; background:var(--text-muted); flex-shrink:0; }
   .listener-gift-tag.has-file .tag-dot { background: var(--accent); }
 
-  /* BULK DL */
+  /* ===== BULK DL ===== */
   #bulk-section { display: none; }
   .bulk-dl-btn {
-    width: 100%;
-    background: linear-gradient(135deg, var(--accent2), #4f46e5);
+    width: 100%; background: linear-gradient(135deg, var(--accent2), #4f46e5);
     border: none; color: #fff; font-size: 15px; font-weight: 700;
     padding: 16px 24px; border-radius: var(--radius); cursor: pointer;
-    letter-spacing: .05em; transition: opacity .2s; font-family: var(--font);
+    letter-spacing:.05em; transition: opacity .2s; font-family: var(--font);
     display: flex; align-items: center; justify-content: center; gap: 8px;
   }
   .bulk-dl-btn:hover { opacity: .9; }
@@ -164,11 +216,10 @@
   }
   .reset-btn:hover { background: var(--danger); color: #fff; }
 
-  /* LOADING */
+  /* ===== LOADING / TOAST ===== */
   .loading-overlay {
-    display: none; position: fixed; inset: 0;
-    background: rgba(0,0,0,.7); z-index: 999;
-    align-items: center; justify-content: center;
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7);
+    z-index: 999; align-items: center; justify-content: center;
     flex-direction: column; gap: 16px; font-size: 14px; color: var(--accent);
   }
   .loading-overlay.show { display: flex; }
@@ -178,8 +229,6 @@
     animation: spin .7s linear infinite;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
-
-  /* TOAST */
   .toast {
     position: fixed; bottom: 24px; left: 50%;
     transform: translateX(-50%) translateY(80px);
@@ -189,11 +238,13 @@
   }
   .toast.show { transform: translateX(-50%) translateY(0); }
   .toast.success { border-color: var(--success); color: var(--success); }
-  .toast.error { border-color: var(--danger); color: var(--danger); }
+  .toast.error   { border-color: var(--danger);  color: var(--danger); }
+  .toast.warn    { border-color: var(--warn);    color: var(--warn); }
 
   @media (max-width: 480px) {
     .gift-item { grid-template-columns: 1fr auto; }
     .gift-rarity { display: none; }
+    .mode-btn { font-size: 11px; padding: 10px 4px; }
   }
 </style>
 </head>
@@ -206,38 +257,99 @@
 
 <main>
 
-  <!-- STEP 1 -->
-  <section id="step1-section">
-    <div class="section-title">STEP 1 ── CSV読み込み</div>
-    <div class="drop-area" id="drop-area">
-      <div class="drop-icon">📂</div>
-      <p>CSVファイルをここにドロップ</p>
-      <p class="drop-hint">配信補助ツール（闇ガチャ）からエクスポートしたCSV</p>
-      <label class="file-select-btn">
-        📁 ファイルを選択
-        <input type="file" id="csv-file-input" accept=".csv" style="display:none">
-      </label>
+  <!-- モード切替 -->
+  <section>
+    <div class="section-title">MODE ── 登録方式を選択</div>
+    <div class="mode-toggle-wrap">
+      <button class="mode-btn active" id="mode-btn-preset" onclick="switchMode('preset')">
+        <span class="mode-icon">📦</span>
+        <span>先登録モード</span>
+        <span style="font-size:10px;font-weight:400;color:inherit;opacity:.7">景品を先に登録→CSV自動紐づけ</span>
+      </button>
+      <button class="mode-btn" id="mode-btn-adhoc" onclick="switchMode('adhoc')">
+        <span class="mode-icon">📂</span>
+        <span>都度登録モード</span>
+        <span style="font-size:10px;font-weight:400;color:inherit;opacity:.7">CSV読込後にファイルを紐づけ</span>
+      </button>
     </div>
   </section>
 
+  <!-- ===== 先登録モード ===== -->
+  <div id="preset-panel">
+
+    <!-- 景品プリセット登録 -->
+    <section>
+      <div class="section-title">STEP 1 ── 景品を登録</div>
+      <div class="card">
+        <div class="card-label">景品名＋ファイルを先に登録しておく</div>
+        <div class="preset-add-row">
+          <input type="text" class="preset-name-input" id="preset-name-input" placeholder="景品名を入力（例: おやすみ）" maxlength="100">
+          <button class="preset-add-btn" onclick="addPresetItem()">＋ 追加</button>
+        </div>
+        <p id="preset-empty-msg" style="font-size:12px;color:var(--text-muted);text-align:center;padding:12px 0;">景品がまだ登録されていません</p>
+        <div class="gift-list" id="preset-gift-list"></div>
+      </div>
+    </section>
+
+    <!-- CSV読み込み（先登録モード） -->
+    <section>
+      <div class="section-title">STEP 2 ── CSV読み込み</div>
+      <div class="drop-area" id="drop-area-preset">
+        <div class="drop-icon">📂</div>
+        <p>CSVをドロップ、またはタップして選択</p>
+        <label class="file-select-btn">
+          📁 ファイルを選択
+          <input type="file" id="csv-input-preset" accept=".csv" style="display:none">
+        </label>
+      </div>
+    </section>
+
+    <!-- 紐づけ結果 -->
+    <section id="preset-match-section" style="display:none">
+      <div class="section-title">STEP 2.5 ── 自動紐づけ結果</div>
+      <div class="card">
+        <div id="preset-match-summary" style="font-size:12px;margin-bottom:10px;"></div>
+        <div class="gift-list" id="preset-match-list"></div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- ===== 都度登録モード ===== -->
+  <div id="adhoc-panel" style="display:none">
+
+    <!-- CSV読み込み（都度モード） -->
+    <section>
+      <div class="section-title">STEP 1 ── CSV読み込み</div>
+      <div class="drop-area" id="drop-area-adhoc">
+        <div class="drop-icon">📂</div>
+        <p>CSVをドロップ、またはタップして選択</p>
+        <label class="file-select-btn">
+          📁 ファイルを選択
+          <input type="file" id="csv-input-adhoc" accept=".csv" style="display:none">
+        </label>
+      </div>
+    </section>
+
+    <!-- 景品ファイル紐づけ（都度） -->
+    <section id="adhoc-gift-section" style="display:none">
+      <div class="section-title">STEP 2 ── 景品にファイルを登録</div>
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">各景品にファイルを紐づけてください。未登録でもDL可能です。</p>
+      <div class="gift-list" id="adhoc-gift-list"></div>
+    </section>
+
+  </div>
+
+  <!-- ステータスバー（共通） -->
   <div id="status-bar"></div>
 
-  <!-- STEP 2 -->
-  <section id="gift-section">
-    <div class="section-title">STEP 2 ── 景品にファイルを登録</div>
-    <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">
-      各景品にmp3・png・jpegなどを紐づけてください。未登録でもDL可能です。
-    </p>
-    <div class="gift-list" id="gift-list"></div>
-  </section>
-
-  <!-- STEP 3 -->
+  <!-- リスナー一覧（共通） -->
   <section id="listener-section">
     <div class="section-title">STEP 3 ── リスナーごとに確認・DL</div>
     <div class="listener-grid" id="listener-grid"></div>
   </section>
 
-  <!-- STEP 4 -->
+  <!-- 一括DL（共通） -->
   <section id="bulk-section">
     <div class="section-title">STEP 4 ── 全員まとめてDL</div>
     <button class="bulk-dl-btn" id="bulk-dl-btn">📦 全リスナーのZIPをまとめてダウンロード</button>
@@ -258,182 +370,391 @@
 'use strict';
 
 // ===== STATE =====
-let giftMap = {};     // { giftName: { rarity, file } }
-let listenerMap = {}; // { listenerName: Set<giftName> }
+let currentMode = 'preset'; // 'preset' | 'adhoc'
+
+// 先登録モード用
+let presetItems = {};   // { normalizedName: { displayName, file } }
+
+// 都度登録モード用
+let adhocGiftMap = {};  // { giftName: { rarity, file } }
+
+// 共通
+let listenerMap = {};   // { listenerName: Set<giftName> }
+let csvLoaded = false;
+
+// ===== NORMALIZE（名前の揺れ吸収） =====
+function normalize(str) {
+  return String(str)
+    .trim()
+    .replace(/　/g, ' ')           // 全角スペース→半角
+    .replace(/\s+/g, '')           // 空白除去
+    .toLowerCase()
+    .replace(/[Ａ-Ｚａ-ｚ０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0)); // 全角英数→半角
+}
 
 // ===== UTILS =====
 function showToast(msg, type) {
   const t = document.getElementById('toast');
   t.textContent = msg;
-  t.className = 'toast show' + (type ? ' ' + type : '');
-  clearTimeout(t._timer);
-  t._timer = setTimeout(() => { t.className = 'toast'; }, 2800);
+  t.className = 'toast show' + (type ? ' '+type : '');
+  clearTimeout(t._t);
+  t._t = setTimeout(() => { t.className = 'toast'; }, 2800);
 }
-
 function showLoading(msg) {
   document.getElementById('loading-msg').textContent = msg || 'ZIPを作成中...';
   document.getElementById('loading').classList.add('show');
 }
-function hideLoading() {
-  document.getElementById('loading').classList.remove('show');
-}
-
-function showSection(id) {
-  document.getElementById(id).style.display = 'block';
-}
-function hideSection(id) {
-  document.getElementById(id).style.display = 'none';
-}
+function hideLoading() { document.getElementById('loading').classList.remove('show'); }
+function show(id) { document.getElementById(id).style.display = 'block'; }
+function hide(id) { document.getElementById(id).style.display = 'none'; }
 
 function rarityClass(r) {
-  const u = (r || '').toUpperCase().trim();
-  if (u === 'N')   return 'rarity-N';
-  if (u === 'R')   return 'rarity-R';
-  if (u === 'SR')  return 'rarity-SR';
-  if (u === 'SSR') return 'rarity-SSR';
-  if (u === 'UR')  return 'rarity-UR';
+  const u = (r||'').toUpperCase().trim();
+  if (u==='N')   return 'rarity-N';
+  if (u==='R')   return 'rarity-R';
+  if (u==='SR')  return 'rarity-SR';
+  if (u==='SSR') return 'rarity-SSR';
+  if (u==='UR')  return 'rarity-UR';
   return 'rarity-other';
 }
 
-function escHtml(str) {
-  return String(str)
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+// ===== MODE SWITCH =====
+function switchMode(mode) {
+  currentMode = mode;
+  document.getElementById('mode-btn-preset').classList.toggle('active', mode==='preset');
+  document.getElementById('mode-btn-adhoc').classList.toggle('active', mode==='adhoc');
+  document.getElementById('preset-panel').style.display = mode==='preset' ? 'block' : 'none';
+  document.getElementById('adhoc-panel').style.display  = mode==='adhoc'  ? 'block' : 'none';
+  // 読み込み済みデータをリセット
+  resetResults();
 }
 
 // ===== CSV PARSE =====
 function parseCSVLine(line) {
-  const cols = [];
-  let cur = '', inQ = false;
-  for (let i = 0; i < line.length; i++) {
+  const cols = []; let cur='', inQ=false;
+  for (let i=0; i<line.length; i++) {
     const ch = line[i];
-    if (ch === '"') {
-      if (inQ && line[i+1] === '"') { cur += '"'; i++; }
-      else inQ = !inQ;
-    } else if (ch === ',' && !inQ) {
-      cols.push(cur.trim()); cur = '';
-    } else {
-      cur += ch;
-    }
+    if (ch==='"') { if(inQ&&line[i+1]==='"'){cur+='"';i++;} else inQ=!inQ; }
+    else if (ch===','&&!inQ) { cols.push(cur.trim()); cur=''; }
+    else cur+=ch;
   }
-  cols.push(cur.trim());
-  return cols;
+  cols.push(cur.trim()); return cols;
 }
-
 function parseCSV(text) {
-  const clean = text.replace(/^\uFEFF/, '');
+  const clean = text.replace(/^\uFEFF/,'');
   const lines = clean.split(/\r?\n/);
   const results = [];
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
-    if (!line) continue;
-    if (i === 0 && /リスナー|listener/i.test(line)) continue;
+  for (let i=0; i<lines.length; i++) {
+    const line = lines[i].trim(); if (!line) continue;
+    if (i===0 && /リスナー|listener/i.test(line)) continue;
     const cols = parseCSVLine(line);
-    if (cols.length < 3) continue;
-    const [listener, rarity, gift] = cols;
-    if (!listener || !gift) continue;
-    results.push({ listener, rarity: rarity || '', gift });
+    if (cols.length<3) continue;
+    const [listener,rarity,gift] = cols;
+    if (!listener||!gift) continue;
+    results.push({listener,rarity:rarity||'',gift});
   }
   return results;
 }
 
-// ===== BUILD MAPS =====
-function buildMaps(rows) {
-  giftMap = {};
-  listenerMap = {};
-  for (const { listener, rarity, gift } of rows) {
-    if (!giftMap[gift]) giftMap[gift] = { rarity, file: null };
-    if (!listenerMap[listener]) listenerMap[listener] = new Set();
-    listenerMap[listener].add(gift);
-  }
+// ===== PRESET MODE =====
+function addPresetItem() {
+  const input = document.getElementById('preset-name-input');
+  const name = input.value.trim();
+  if (!name) { showToast('景品名を入力してください', 'warn'); return; }
+  const key = normalize(name);
+  if (presetItems[key]) { showToast('同じ名前の景品が既にあります', 'warn'); return; }
+  presetItems[key] = { displayName: name, file: null };
+  input.value = '';
+  renderPresetList();
 }
 
-// ===== RENDER =====
-function renderAll(rows) {
-  renderStatus(rows);
-  renderGiftList();
-  renderListenerGrid();
-  showSection('status-bar');
-  showSection('gift-section');
-  showSection('listener-section');
-  showSection('bulk-section');
+function removePresetItem(key) {
+  delete presetItems[key];
+  renderPresetList();
+  if (csvLoaded) rematch();
 }
 
-function renderStatus(rows) {
-  const bar = document.getElementById('status-bar');
-  const lCount = Object.keys(listenerMap).length;
-  const gCount = Object.keys(giftMap).length;
-  bar.textContent = `✅ 読み込み完了 ── ${rows.length}件 / リスナー ${lCount}人 / 景品 ${gCount}種類`;
-}
-
-function renderGiftList() {
-  const el = document.getElementById('gift-list');
+function renderPresetList() {
+  const el = document.getElementById('preset-gift-list');
+  const empty = document.getElementById('preset-empty-msg');
+  const keys = Object.keys(presetItems);
   el.innerHTML = '';
-  for (const [name, info] of Object.entries(giftMap)) {
+  if (keys.length === 0) {
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+  for (const key of keys) {
+    const info = presetItems[key];
     const item = document.createElement('div');
     item.className = 'gift-item' + (info.file ? ' has-file' : '');
-    item.dataset.gift = name;
+    item.dataset.key = key;
 
-    // ファイル入力を別途作成してattach（innerHTMLだとイベントが消えるため）
     const nameEl = document.createElement('div');
     nameEl.className = 'gift-name';
-    nameEl.textContent = name;
+    nameEl.textContent = info.displayName;
 
-    const rarEl = document.createElement('span');
-    rarEl.className = 'gift-rarity ' + rarityClass(info.rarity);
-    rarEl.textContent = info.rarity || '?';
+    const badge = document.createElement('span');
+    badge.className = 'match-badge pre';
+    badge.textContent = '登録済み';
+    badge.id = 'badge-'+key;
+
+    const rightWrap = document.createElement('div');
+    rightWrap.style.cssText = 'display:flex;align-items:center;gap:8px;';
 
     const label = document.createElement('label');
     label.className = 'gift-file-label' + (info.file ? ' attached' : '');
-    label.textContent = info.file ? '✅ ' + info.file.name : '📎 ファイル選択';
+    const labelText = document.createTextNode(info.file ? '✅ '+info.file.name : '📎 ファイル選択');
+    label.appendChild(labelText);
 
     const fileInput = document.createElement('input');
     fileInput.type = 'file';
     fileInput.accept = 'audio/*,image/*,video/*,.zip,.pdf,.txt';
     fileInput.style.display = 'none';
-    fileInput.dataset.gift = name;
-    fileInput.addEventListener('change', onGiftFileChange);
+    fileInput.dataset.key = key;
+    fileInput.addEventListener('change', onPresetFileChange);
     label.appendChild(fileInput);
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'preset-del-btn';
+    delBtn.textContent = '✕';
+    delBtn.title = '削除';
+    delBtn.addEventListener('click', () => removePresetItem(key));
+
+    rightWrap.appendChild(label);
+    rightWrap.appendChild(delBtn);
 
     const fnEl = document.createElement('div');
     fnEl.className = 'gift-filename' + (info.file ? ' show' : '');
     fnEl.textContent = info.file ? info.file.name : '';
+    fnEl.style.gridColumn = '1 / -1';
 
     item.appendChild(nameEl);
-    item.appendChild(rarEl);
-    item.appendChild(label);
+    item.appendChild(badge);
+    item.appendChild(rightWrap);
     item.appendChild(fnEl);
     el.appendChild(item);
   }
 }
 
-function onGiftFileChange(e) {
-  const giftName = e.target.dataset.gift;
+function onPresetFileChange(e) {
+  const key = e.target.dataset.key;
   const file = e.target.files[0];
-  if (!file || !giftMap[giftName]) return;
-  giftMap[giftName].file = file;
+  if (!file || !presetItems[key]) return;
+  presetItems[key].file = file;
+  renderPresetList();
+  if (csvLoaded) rematch();
+  showToast(`「${presetItems[key].displayName}」にファイルを登録しました`, 'success');
+}
 
-  const item = document.querySelector(`.gift-item[data-gift="${CSS.escape(giftName)}"]`);
-  if (item) {
-    item.classList.add('has-file');
-    const label = item.querySelector('.gift-file-label');
-    label.classList.add('attached');
-    // テキストノードだけ変更
-    label.firstChild.textContent = '✅ ' + file.name;
-    const fn = item.querySelector('.gift-filename');
-    fn.textContent = file.name;
-    fn.classList.add('show');
+// CSV読み込み後に先登録と照合
+function matchPreset(rows) {
+  listenerMap = {};
+  for (const {listener, gift} of rows) {
+    if (!listenerMap[listener]) listenerMap[listener] = new Set();
+    listenerMap[listener].add(gift);
   }
-  updateListenerTags(giftName);
-  showToast(`「${giftName}」を登録しました`, 'success');
+
+  // 照合結果表示
+  const allGifts = new Set(rows.map(r=>r.gift));
+  const matchEl = document.getElementById('preset-match-list');
+  const summaryEl = document.getElementById('preset-match-summary');
+  matchEl.innerHTML = '';
+
+  let matchCount=0, unmatchCount=0;
+  for (const gift of allGifts) {
+    const key = normalize(gift);
+    const presetInfo = presetItems[key];
+    const item = document.createElement('div');
+    item.className = 'gift-item ' + (presetInfo?.file ? 'matched' : presetInfo ? 'has-file' : 'unmatched');
+
+    const nameEl = document.createElement('div');
+    nameEl.className = 'gift-name';
+    nameEl.textContent = gift;
+
+    const badge = document.createElement('span');
+    if (presetInfo) {
+      badge.className = 'match-badge ok';
+      badge.textContent = presetInfo.file ? '✅ 紐づけ済み' : '⚠ ファイル未登録';
+      matchCount++;
+    } else {
+      badge.className = 'match-badge ng';
+      badge.textContent = '❌ 未登録';
+      unmatchCount++;
+    }
+
+    const infoEl = document.createElement('div');
+    infoEl.style.cssText = 'font-size:11px;color:var(--text-muted);grid-column:1/-1;padding-top:2px;';
+    if (presetInfo?.file) infoEl.textContent = presetInfo.file.name;
+    else if (presetInfo) infoEl.textContent = '← STEP1でファイルを登録してください';
+    else infoEl.textContent = '← STEP1に同じ名前で景品を追加してください';
+
+    item.appendChild(nameEl);
+    item.appendChild(badge);
+    item.appendChild(infoEl);
+    matchEl.appendChild(item);
+  }
+
+  summaryEl.innerHTML = `
+    <span style="color:var(--success);font-weight:700;">✅ 紐づけ成功: ${matchCount}種類</span>
+    ${unmatchCount>0 ? `　<span style="color:var(--warn);font-weight:700;">⚠ 未紐づけ: ${unmatchCount}種類</span>` : ''}
+  `;
+  show('preset-match-section');
 }
 
-function updateListenerTags(giftName) {
-  const tags = document.querySelectorAll(`.listener-gift-tag[data-gift="${CSS.escape(giftName)}"]`);
-  const has = !!giftMap[giftName]?.file;
-  tags.forEach(t => { has ? t.classList.add('has-file') : t.classList.remove('has-file'); });
+function rematch() {
+  if (!csvLoaded) return;
+  // giftMapを先登録から再構築
+  buildGiftMapFromPreset();
+  // 照合結果再描画はlistenerMapから
+  const allGifts = new Set();
+  for (const gifts of Object.values(listenerMap)) gifts.forEach(g=>allGifts.add(g));
+  // matchPresetを再実行するためにrowsを再現できないのでlistenerMapからgiftsを再収集
+  // → 照合リストのみ再描画
+  const matchEl = document.getElementById('preset-match-list');
+  const summaryEl = document.getElementById('preset-match-summary');
+  matchEl.innerHTML = '';
+  let matchCount=0, unmatchCount=0;
+  for (const gift of allGifts) {
+    const key = normalize(gift);
+    const presetInfo = presetItems[key];
+    const item = document.createElement('div');
+    item.className = 'gift-item ' + (presetInfo?.file ? 'matched' : presetInfo ? 'has-file' : 'unmatched');
+    const nameEl = document.createElement('div');
+    nameEl.className = 'gift-name'; nameEl.textContent = gift;
+    const badge = document.createElement('span');
+    if (presetInfo) {
+      badge.className = 'match-badge ok';
+      badge.textContent = presetInfo.file ? '✅ 紐づけ済み' : '⚠ ファイル未登録';
+      matchCount++;
+    } else {
+      badge.className = 'match-badge ng'; badge.textContent = '❌ 未登録'; unmatchCount++;
+    }
+    const infoEl = document.createElement('div');
+    infoEl.style.cssText = 'font-size:11px;color:var(--text-muted);grid-column:1/-1;padding-top:2px;';
+    if (presetInfo?.file) infoEl.textContent = presetInfo.file.name;
+    else if (presetInfo) infoEl.textContent = '← STEP1でファイルを登録してください';
+    else infoEl.textContent = '← STEP1に同じ名前で景品を追加してください';
+    item.appendChild(nameEl); item.appendChild(badge); item.appendChild(infoEl);
+    matchEl.appendChild(item);
+  }
+  summaryEl.innerHTML = `
+    <span style="color:var(--success);font-weight:700;">✅ 紐づけ成功: ${matchCount}種類</span>
+    ${unmatchCount>0 ? `　<span style="color:var(--warn);font-weight:700;">⚠ 未紐づけ: ${unmatchCount}種類</span>` : ''}
+  `;
+  buildGiftMapFromPreset();
+  renderListenerGrid();
 }
 
+function buildGiftMapFromPreset() {
+  // giftMapをpresetItemsから構築（正規化で照合）
+  // giftMapのキーはCSV上の元の景品名
+  const allGifts = new Set();
+  for (const gifts of Object.values(listenerMap)) gifts.forEach(g=>allGifts.add(g));
+  window._giftMapForZip = {};
+  for (const gift of allGifts) {
+    const key = normalize(gift);
+    const presetInfo = presetItems[key];
+    window._giftMapForZip[gift] = { file: presetInfo?.file || null };
+  }
+}
+
+// ===== ADHOC MODE =====
+function renderAdhocGiftList() {
+  const el = document.getElementById('adhoc-gift-list');
+  el.innerHTML = '';
+  for (const [name, info] of Object.entries(adhocGiftMap)) {
+    const item = document.createElement('div');
+    item.className = 'gift-item' + (info.file ? ' has-file' : '');
+    item.dataset.gift = name;
+
+    const nameEl = document.createElement('div');
+    nameEl.className = 'gift-name'; nameEl.textContent = name;
+
+    const rarEl = document.createElement('span');
+    rarEl.className = 'gift-rarity '+rarityClass(info.rarity); rarEl.textContent = info.rarity||'?';
+
+    const label = document.createElement('label');
+    label.className = 'gift-file-label'+(info.file?' attached':'');
+    const labelText = document.createTextNode(info.file?'✅ '+info.file.name:'📎 ファイル選択');
+    label.appendChild(labelText);
+
+    const fileInput = document.createElement('input');
+    fileInput.type='file'; fileInput.accept='audio/*,image/*,video/*,.zip,.pdf,.txt';
+    fileInput.style.display='none'; fileInput.dataset.gift=name;
+    fileInput.addEventListener('change', onAdhocFileChange);
+    label.appendChild(fileInput);
+
+    const fnEl = document.createElement('div');
+    fnEl.className='gift-filename'+(info.file?' show':'');
+    fnEl.textContent=info.file?info.file.name:'';
+
+    item.appendChild(nameEl); item.appendChild(rarEl); item.appendChild(label); item.appendChild(fnEl);
+    el.appendChild(item);
+  }
+}
+
+function onAdhocFileChange(e) {
+  const gift = e.target.dataset.gift;
+  const file = e.target.files[0];
+  if (!file||!adhocGiftMap[gift]) return;
+  adhocGiftMap[gift].file = file;
+  renderAdhocGiftList();
+  updateAdhocListenerTags(gift);
+  showToast(`「${gift}」を登録しました`, 'success');
+}
+
+function updateAdhocListenerTags(giftName) {
+  document.querySelectorAll(`.listener-gift-tag[data-gift="${CSS.escape(giftName)}"]`)
+    .forEach(t => { adhocGiftMap[giftName]?.file ? t.classList.add('has-file') : t.classList.remove('has-file'); });
+}
+
+// ===== CSV HANDLE =====
+function handleCSVFile(file, mode) {
+  if (!file) return;
+  if (!file.name.toLowerCase().endsWith('.csv')) { showToast('CSVファイルを選択してください','error'); return; }
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const rows = parseCSV(ev.target.result);
+      if (rows.length===0) { showToast('有効なデータが見つかりませんでした','error'); return; }
+
+      listenerMap = {};
+      for (const {listener,rarity,gift} of rows) {
+        if (!listenerMap[listener]) listenerMap[listener]=new Set();
+        listenerMap[listener].add(gift);
+      }
+      csvLoaded = true;
+
+      // ステータス更新
+      const bar = document.getElementById('status-bar');
+      bar.textContent = `✅ 読み込み完了 ── ${rows.length}件 / リスナー ${Object.keys(listenerMap).length}人 / 景品 ${new Set(rows.map(r=>r.gift)).size}種類`;
+      show('status-bar');
+
+      if (mode==='preset') {
+        matchPreset(rows);
+        buildGiftMapFromPreset();
+      } else {
+        // adhoc: giftMap再構築
+        adhocGiftMap = {};
+        for (const {rarity,gift} of rows) {
+          if (!adhocGiftMap[gift]) adhocGiftMap[gift]={rarity,file:null};
+        }
+        renderAdhocGiftList();
+        show('adhoc-gift-section');
+      }
+
+      renderListenerGrid();
+      show('listener-section');
+      show('bulk-section');
+      showToast(`${rows.length}件を読み込みました`,'success');
+    } catch(err) { showToast('CSVの解析に失敗しました','error'); console.error(err); }
+  };
+  reader.onerror = () => showToast('ファイルの読み込みに失敗しました','error');
+  reader.readAsText(file,'UTF-8');
+}
+
+// ===== LISTENER GRID =====
 function renderListenerGrid() {
   const grid = document.getElementById('listener-grid');
   grid.innerHTML = '';
@@ -445,69 +766,56 @@ function renderListenerGrid() {
     const header = document.createElement('div');
     header.className = 'listener-header';
 
-    const nameEl = document.createElement('span');
-    nameEl.className = 'listener-name';
-    nameEl.textContent = name;
+    const nameEl = document.createElement('span'); nameEl.className='listener-name'; nameEl.textContent=name;
+    const countEl = document.createElement('span'); countEl.className='listener-count'; countEl.textContent=giftsArr.length+'種類';
+    const dlBtn = document.createElement('button'); dlBtn.className='listener-dl-btn'; dlBtn.textContent='⬇ DL';
+    dlBtn.addEventListener('click', e=>{e.stopPropagation(); downloadListenerZip(name);});
+    const arrow = document.createElement('span'); arrow.className='collapse-arrow'; arrow.textContent='▼';
 
-    const countEl = document.createElement('span');
-    countEl.className = 'listener-count';
-    countEl.textContent = giftsArr.length + '種類';
+    header.appendChild(nameEl); header.appendChild(countEl); header.appendChild(dlBtn); header.appendChild(arrow);
+    header.addEventListener('click', ()=>card.classList.toggle('open'));
 
-    const dlBtn = document.createElement('button');
-    dlBtn.className = 'listener-dl-btn';
-    dlBtn.textContent = '⬇ DL';
-    dlBtn.addEventListener('click', e => { e.stopPropagation(); downloadListenerZip(name); });
-
-    const arrow = document.createElement('span');
-    arrow.className = 'collapse-arrow';
-    arrow.textContent = '▼';
-
-    header.appendChild(nameEl);
-    header.appendChild(countEl);
-    header.appendChild(dlBtn);
-    header.appendChild(arrow);
-    header.addEventListener('click', () => card.classList.toggle('open'));
-
-    const giftsEl = document.createElement('div');
-    giftsEl.className = 'listener-gifts';
-    giftsArr.forEach(g => {
+    const giftsEl = document.createElement('div'); giftsEl.className='listener-gifts';
+    giftsArr.forEach(g=>{
+      const giftMap = currentMode==='preset' ? (window._giftMapForZip||{}) : adhocGiftMap;
       const tag = document.createElement('span');
-      tag.className = 'listener-gift-tag' + (giftMap[g]?.file ? ' has-file' : '');
+      tag.className = 'listener-gift-tag'+(giftMap[g]?.file?' has-file':'');
       tag.dataset.gift = g;
-      const dot = document.createElement('span');
-      dot.className = 'tag-dot';
-      tag.appendChild(dot);
-      tag.appendChild(document.createTextNode(g));
+      const dot=document.createElement('span'); dot.className='tag-dot';
+      tag.appendChild(dot); tag.appendChild(document.createTextNode(g));
       giftsEl.appendChild(tag);
     });
 
-    card.appendChild(header);
-    card.appendChild(giftsEl);
+    card.appendChild(header); card.appendChild(giftsEl);
     grid.appendChild(card);
   }
 }
 
 // ===== ZIP =====
+function getFileForGift(giftName) {
+  if (currentMode==='preset') return (window._giftMapForZip||{})[giftName]?.file||null;
+  return adhocGiftMap[giftName]?.file||null;
+}
+
 async function buildListenerZip(listenerName) {
   const zip = new JSZip();
-  const gifts = Array.from(listenerMap[listenerName] || []);
+  const gifts = Array.from(listenerMap[listenerName]||[]);
   const seen = new Set();
-  for (const giftName of gifts) {
-    const info = giftMap[giftName];
-    if (!info?.file) continue;
-    let filename = info.file.name;
+  for (const gift of gifts) {
+    const file = getFileForGift(gift);
+    if (!file) continue;
+    let filename = file.name;
     if (seen.has(filename)) {
-      const dot = filename.lastIndexOf('.');
-      const base = dot >= 0 ? filename.slice(0, dot) : filename;
-      const ext  = dot >= 0 ? filename.slice(dot) : '';
-      let n = 2;
-      while (seen.has(`${base}_${n}${ext}`)) n++;
-      filename = `${base}_${n}${ext}`;
+      const dot=filename.lastIndexOf('.');
+      const base=dot>=0?filename.slice(0,dot):filename;
+      const ext=dot>=0?filename.slice(dot):'';
+      let n=2; while(seen.has(`${base}_${n}${ext}`))n++;
+      filename=`${base}_${n}${ext}`;
     }
     seen.add(filename);
-    zip.file(filename, info.file);
+    zip.file(filename, file);
   }
-  const listText = gifts.map(g => g + (giftMap[g]?.file ? '' : '（ファイル未登録）')).join('\n');
+  const listText = gifts.map(g=>g+(getFileForGift(g)?'':'（ファイル未登録）')).join('\n');
   zip.file('景品リスト.txt', `${listenerName} さんへの景品\n\n${listText}`);
   return zip;
 }
@@ -516,15 +824,11 @@ async function downloadListenerZip(name) {
   showLoading(`${name} さんのZIPを作成中...`);
   try {
     const zip = await buildListenerZip(name);
-    const blob = await zip.generateAsync({ type: 'blob' });
+    const blob = await zip.generateAsync({type:'blob'});
     triggerDownload(blob, `${name}.zip`);
-    showToast(`${name}.zip をダウンロードしました`, 'success');
-  } catch(e) {
-    showToast('ZIPの作成に失敗しました', 'error');
-    console.error(e);
-  } finally {
-    hideLoading();
-  }
+    showToast(`${name}.zip をダウンロードしました`,'success');
+  } catch(e) { showToast('ZIPの作成に失敗しました','error'); console.error(e); }
+  finally { hideLoading(); }
 }
 
 async function downloadAllZip() {
@@ -533,82 +837,65 @@ async function downloadAllZip() {
     const outer = new JSZip();
     for (const name of Object.keys(listenerMap)) {
       const inner = await buildListenerZip(name);
-      const blob = await inner.generateAsync({ type: 'blob' });
+      const blob = await inner.generateAsync({type:'blob'});
       outer.file(`${name}.zip`, blob);
     }
-    const blob = await outer.generateAsync({ type: 'blob' });
+    const blob = await outer.generateAsync({type:'blob'});
     triggerDownload(blob, '全リスナー景品.zip');
-    showToast('全リスナーのZIPをダウンロードしました', 'success');
-  } catch(e) {
-    showToast('ZIPの作成に失敗しました', 'error');
-    console.error(e);
-  } finally {
-    hideLoading();
-  }
+    showToast('全リスナーのZIPをダウンロードしました','success');
+  } catch(e) { showToast('ZIPの作成に失敗しました','error'); console.error(e); }
+  finally { hideLoading(); }
 }
 
 function triggerDownload(blob, filename) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = filename;
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download=filename;
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 3000);
+  setTimeout(()=>URL.revokeObjectURL(url),3000);
 }
 
-// ===== CSV FILE HANDLING =====
-function handleCSVFile(file) {
-  if (!file) return;
-  if (!file.name.toLowerCase().endsWith('.csv')) {
-    showToast('CSVファイルを選択してください', 'error');
-    return;
-  }
-  const reader = new FileReader();
-  reader.onload = ev => {
-    try {
-      const rows = parseCSV(ev.target.result);
-      if (rows.length === 0) {
-        showToast('有効なデータが見つかりませんでした', 'error');
-        return;
-      }
-      buildMaps(rows);
-      renderAll(rows);
-      showToast(`${rows.length}件を読み込みました`, 'success');
-    } catch(err) {
-      showToast('CSVの解析に失敗しました', 'error');
-      console.error(err);
-    }
-  };
-  reader.onerror = () => showToast('ファイルの読み込みに失敗しました', 'error');
-  reader.readAsText(file, 'UTF-8');
+// ===== RESET =====
+function resetResults() {
+  csvLoaded=false; listenerMap={}; adhocGiftMap={};
+  window._giftMapForZip={};
+  hide('status-bar'); hide('listener-section'); hide('bulk-section');
+  hide('adhoc-gift-section'); hide('preset-match-section');
+  document.getElementById('listener-grid').innerHTML='';
+  document.getElementById('adhoc-gift-list').innerHTML='';
+  document.getElementById('csv-input-preset').value='';
+  document.getElementById('csv-input-adhoc').value='';
 }
 
 // ===== EVENTS =====
-const dropArea = document.getElementById('drop-area');
-dropArea.addEventListener('dragover', e => { e.preventDefault(); dropArea.classList.add('dragover'); });
-dropArea.addEventListener('dragleave', () => dropArea.classList.remove('dragover'));
-dropArea.addEventListener('drop', e => {
-  e.preventDefault();
-  dropArea.classList.remove('dragover');
-  handleCSVFile(e.dataTransfer.files[0]);
-});
+// ドロップゾーン共通セットアップ
+function setupDropZone(dropAreaId, inputId, mode) {
+  const area = document.getElementById(dropAreaId);
+  const input = document.getElementById(inputId);
+  area.addEventListener('dragover', e=>{e.preventDefault(); area.classList.add('dragover');});
+  area.addEventListener('dragleave', ()=>area.classList.remove('dragover'));
+  area.addEventListener('drop', e=>{
+    e.preventDefault(); area.classList.remove('dragover');
+    handleCSVFile(e.dataTransfer.files[0], mode);
+  });
+  input.addEventListener('change', e=>{
+    handleCSVFile(e.target.files[0], mode);
+    e.target.value='';
+  });
+}
+setupDropZone('drop-area-preset','csv-input-preset','preset');
+setupDropZone('drop-area-adhoc','csv-input-adhoc','adhoc');
 
-document.getElementById('csv-file-input').addEventListener('change', e => {
-  handleCSVFile(e.target.files[0]);
-  e.target.value = ''; // 同じファイルを再選択できるようにリセット
+// Enterキーで景品追加
+document.getElementById('preset-name-input').addEventListener('keydown', e=>{
+  if (e.key==='Enter') addPresetItem();
 });
 
 document.getElementById('bulk-dl-btn').addEventListener('click', downloadAllZip);
 
-document.getElementById('reset-btn').addEventListener('click', () => {
-  if (!confirm('リセットしますか？CSVと紐づけたファイルがすべて消えます。')) return;
-  giftMap = {}; listenerMap = {};
-  hideSection('status-bar');
-  hideSection('gift-section');
-  hideSection('listener-section');
-  hideSection('bulk-section');
-  document.getElementById('gift-list').innerHTML = '';
-  document.getElementById('listener-grid').innerHTML = '';
-  document.getElementById('csv-file-input').value = '';
+document.getElementById('reset-btn').addEventListener('click', ()=>{
+  if (!confirm('リセットしますか？\nCSV・紐づけファイル・先登録の景品がすべて消えます。')) return;
+  presetItems={}; renderPresetList();
+  resetResults();
   showToast('リセットしました');
 });
 </script>
