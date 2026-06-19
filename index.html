@@ -93,6 +93,7 @@
     display: none; background: var(--surface2); border: 1px solid var(--border);
     border-radius: var(--radius); padding: 12px 16px;
     font-size: 13px; color: var(--accent); margin-bottom: 20px;
+    align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
   }
 
   /* ===== GIFT ITEMS (共通) ===== */
@@ -215,6 +216,12 @@
     cursor: pointer; margin-top: 12px; transition: all .2s; font-family: var(--font);
   }
   .reset-btn:hover { background: var(--danger); color: #fff; }
+  .csv-clear-btn {
+    background: transparent; border: 1px solid var(--text-muted); color: var(--text-muted);
+    padding: 5px 12px; border-radius: 6px; font-size: 11px; white-space: nowrap;
+    cursor: pointer; transition: all .2s; font-family: var(--font); flex-shrink: 0;
+  }
+  .csv-clear-btn:hover { border-color: var(--danger); color: var(--danger); }
 
   /* ===== LOADING / TOAST ===== */
   .loading-overlay {
@@ -341,7 +348,10 @@
   </div>
 
   <!-- ステータスバー（共通） -->
-  <div id="status-bar"></div>
+  <div id="status-bar">
+    <span id="status-bar-text"></span>
+    <button class="csv-clear-btn" id="csv-clear-btn">✕ CSVをクリア</button>
+  </div>
 
   <!-- リスナー一覧（共通） -->
   <section id="listener-section">
@@ -408,6 +418,71 @@ function hideLoading() { document.getElementById('loading').classList.remove('sh
 function show(id) { document.getElementById(id).style.display = 'block'; }
 function hide(id) { document.getElementById(id).style.display = 'none'; }
 
+// ===== 先登録の永続化（IndexedDB） =====
+// ブラウザにキャッシュ（保存データ）が残っていれば、ページを開き直しても
+// STEP1で登録した景品名＋ファイルが自動的に復元されるようにする。
+const PRESET_DB_NAME = 'giftDistributorDB';
+const PRESET_DB_VERSION = 1;
+const PRESET_STORE_NAME = 'presets';
+
+function openPresetDB() {
+  return new Promise((resolve, reject) => {
+    if (!window.indexedDB) { reject(new Error('IndexedDB not supported')); return; }
+    const req = indexedDB.open(PRESET_DB_NAME, PRESET_DB_VERSION);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains(PRESET_STORE_NAME)) {
+        db.createObjectStore(PRESET_STORE_NAME, { keyPath: 'key' });
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function savePresetToDB(key, info) {
+  try {
+    const db = await openPresetDB();
+    const tx = db.transaction(PRESET_STORE_NAME, 'readwrite');
+    tx.objectStore(PRESET_STORE_NAME).put({ key, displayName: info.displayName, file: info.file || null });
+  } catch (e) { console.error('preset save error', e); }
+}
+
+async function deletePresetFromDB(key) {
+  try {
+    const db = await openPresetDB();
+    const tx = db.transaction(PRESET_STORE_NAME, 'readwrite');
+    tx.objectStore(PRESET_STORE_NAME).delete(key);
+  } catch (e) { console.error('preset delete error', e); }
+}
+
+async function clearPresetsDB() {
+  try {
+    const db = await openPresetDB();
+    const tx = db.transaction(PRESET_STORE_NAME, 'readwrite');
+    tx.objectStore(PRESET_STORE_NAME).clear();
+  } catch (e) { console.error('preset clear error', e); }
+}
+
+async function loadPresetsFromDB() {
+  try {
+    const db = await openPresetDB();
+    const tx = db.transaction(PRESET_STORE_NAME, 'readonly');
+    const req = tx.objectStore(PRESET_STORE_NAME).getAll();
+    req.onsuccess = () => {
+      const records = req.result || [];
+      if (records.length === 0) return;
+      for (const rec of records) {
+        presetItems[rec.key] = { displayName: rec.displayName, file: rec.file || null };
+      }
+      renderPresetList();
+      if (csvLoaded) rematch();
+      const fileCount = records.filter(r => r.file).length;
+      showToast(`前回登録した景品${records.length}件を復元しました${fileCount ? `（ファイル付き${fileCount}件）` : ''}`, 'success');
+    };
+  } catch (e) { console.error('preset load error', e); }
+}
+
 function rarityClass(r) {
   const u = (r||'').toUpperCase().trim();
   if (u==='N')   return 'rarity-N';
@@ -466,11 +541,13 @@ function addPresetItem() {
   presetItems[key] = { displayName: name, file: null };
   input.value = '';
   renderPresetList();
+  savePresetToDB(key, presetItems[key]);
 }
 
 function removePresetItem(key) {
   delete presetItems[key];
   renderPresetList();
+  deletePresetFromDB(key);
   if (csvLoaded) rematch();
 }
 
@@ -543,6 +620,7 @@ function onPresetFileChange(e) {
   if (!file || !presetItems[key]) return;
   presetItems[key].file = file;
   renderPresetList();
+  savePresetToDB(key, presetItems[key]);
   if (csvLoaded) rematch();
   showToast(`「${presetItems[key].displayName}」にファイルを登録しました`, 'success');
 }
@@ -727,9 +805,8 @@ function handleCSVFile(file, mode) {
       csvLoaded = true;
 
       // ステータス更新
-      const bar = document.getElementById('status-bar');
-      bar.textContent = `✅ 読み込み完了 ── ${rows.length}件 / リスナー ${Object.keys(listenerMap).length}人 / 景品 ${new Set(rows.map(r=>r.gift)).size}種類`;
-      show('status-bar');
+      document.getElementById('status-bar-text').textContent = `✅ 読み込み完了 ── ${rows.length}件 / リスナー ${Object.keys(listenerMap).length}人 / 景品 ${new Set(rows.map(r=>r.gift)).size}種類`;
+      document.getElementById('status-bar').style.display = 'flex';
 
       if (mode==='preset') {
         matchPreset(rows);
@@ -892,12 +969,23 @@ document.getElementById('preset-name-input').addEventListener('keydown', e=>{
 
 document.getElementById('bulk-dl-btn').addEventListener('click', downloadAllZip);
 
+document.getElementById('csv-clear-btn').addEventListener('click', () => {
+  if (!confirm('CSVの読み込み内容をクリアしますか？\n（STEP1で登録した景品名・ファイルはそのまま残ります）')) return;
+  resetResults();
+  showToast('CSVをクリアしました');
+});
+
 document.getElementById('reset-btn').addEventListener('click', ()=>{
   if (!confirm('リセットしますか？\nCSV・紐づけファイル・先登録の景品がすべて消えます。')) return;
   presetItems={}; renderPresetList();
   resetResults();
+  clearPresetsDB();
   showToast('リセットしました');
 });
+
+// 起動時：前回登録した先登録景品（名前＋ファイル）をIndexedDBから復元
+loadPresetsFromDB();
+
 </script>
 </body>
 </html>
