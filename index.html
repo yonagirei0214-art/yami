@@ -187,10 +187,28 @@
     cursor: pointer; white-space: nowrap; transition: opacity .2s; font-family: var(--font);
   }
   .listener-dl-btn:hover { opacity: .85; }
+  .listener-link-btn {
+    background: var(--accent); color: #04212b; border: none;
+    padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 700;
+    cursor: pointer; white-space: nowrap; transition: opacity .2s; font-family: var(--font);
+  }
+  .listener-link-btn:hover { opacity: .85; }
+  .listener-link-btn:disabled { opacity: .5; cursor: wait; }
   .collapse-arrow { font-size: 12px; color: var(--text-muted); transition: transform .2s; flex-shrink: 0; }
   .listener-card.open .collapse-arrow { transform: rotate(180deg); }
   .listener-gifts { display: none; padding: 0 16px 14px; border-top: 1px solid var(--border); }
   .listener-card.open .listener-gifts { display: block; }
+  .link-result {
+    display: none; align-items: center; gap: 8px; flex-wrap: wrap;
+    margin: 0 16px 12px; padding: 10px 12px;
+    background: var(--surface2); border: 1px solid var(--accent); border-radius: 8px; font-size: 12px;
+  }
+  .link-result.error { border-color: var(--danger); color: var(--danger); }
+  .link-result a { color: var(--accent); word-break: break-all; flex: 1; min-width: 120px; }
+  .link-result button {
+    background: var(--accent2); color: #fff; border: none; padding: 4px 10px;
+    border-radius: 6px; font-size: 11px; cursor: pointer; font-family: var(--font); white-space: nowrap;
+  }
   .listener-gift-tag {
     display: inline-flex; align-items: center; gap: 6px;
     background: var(--surface2); border: 1px solid var(--border);
@@ -210,6 +228,40 @@
     display: flex; align-items: center; justify-content: center; gap: 8px;
   }
   .bulk-dl-btn:hover { opacity: .9; }
+  .bulk-link-btn {
+    width: 100%; background: linear-gradient(135deg, var(--accent), #0ea5b8);
+    border: none; color: #04212b; font-size: 15px; font-weight: 700;
+    padding: 16px 24px; border-radius: var(--radius); cursor: pointer;
+    letter-spacing:.05em; transition: opacity .2s; font-family: var(--font);
+    display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 12px;
+  }
+  .bulk-link-btn:hover { opacity: .9; }
+  .link-options {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    font-size: 12px; color: var(--text-muted); margin: -4px 0 14px;
+  }
+  .link-options select {
+    background: var(--surface2); color: var(--text); border: 1px solid var(--border);
+    border-radius: 6px; padding: 5px 8px; font-family: var(--font); font-size: 12px;
+  }
+  .link-results-box {
+    display: none; margin-top: 14px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; font-size: 13px;
+  }
+  .link-results-box h4 { font-size: 12px; color: var(--accent); margin-bottom: 8px; letter-spacing: .05em; }
+  .link-results-box .row {
+    display: flex; gap: 8px; align-items: center; padding: 7px 0;
+    border-bottom: 1px solid var(--border); flex-wrap: wrap;
+  }
+  .link-results-box .row:last-of-type { border-bottom: none; }
+  .link-results-box .row .name { font-weight: 700; min-width: 90px; }
+  .link-results-box .row a { color: var(--accent); word-break: break-all; flex: 1; min-width: 140px; }
+  .link-results-box .row.error .errmsg { color: var(--danger); }
+  .copyall-btn {
+    margin-top: 10px; background: var(--accent2); color: #fff; border: none;
+    padding: 9px 16px; border-radius: 6px; font-size: 12px; font-weight: 700;
+    cursor: pointer; font-family: var(--font); width: 100%;
+  }
   .reset-btn {
     background: transparent; border: 1px solid var(--danger); color: var(--danger);
     padding: 8px 20px; border-radius: 6px; font-size: 13px;
@@ -356,13 +408,25 @@
   <!-- リスナー一覧（共通） -->
   <section id="listener-section">
     <div class="section-title">STEP 3 ── リスナーごとに確認・DL</div>
+    <div class="link-options">
+      <span>🔗 リンク有効期限:</span>
+      <select id="link-expiry">
+        <option value="1h">1時間</option>
+        <option value="12h">12時間</option>
+        <option value="24h">24時間</option>
+        <option value="72h" selected>72時間（最大）</option>
+      </select>
+      <span>※ litterbox.catbox.moe にアップロード。期限切れで自動削除されます</span>
+    </div>
     <div class="listener-grid" id="listener-grid"></div>
   </section>
 
   <!-- 一括DL（共通） -->
   <section id="bulk-section">
-    <div class="section-title">STEP 4 ── 全員まとめてDL</div>
+    <div class="section-title">STEP 4 ── 全員まとめてDL / リンク発行</div>
     <button class="bulk-dl-btn" id="bulk-dl-btn">📦 全リスナーのZIPをまとめてダウンロード</button>
+    <button class="bulk-link-btn" id="bulk-link-btn">🔗 全リスナーぶんのダウンロードリンクを発行（Discord用）</button>
+    <div class="link-results-box" id="link-results-box"></div>
     <br>
     <button class="reset-btn" id="reset-btn">🔄 リセットして最初から</button>
   </section>
@@ -847,9 +911,12 @@ function renderListenerGrid() {
     const countEl = document.createElement('span'); countEl.className='listener-count'; countEl.textContent=giftsArr.length+'種類';
     const dlBtn = document.createElement('button'); dlBtn.className='listener-dl-btn'; dlBtn.textContent='⬇ DL';
     dlBtn.addEventListener('click', e=>{e.stopPropagation(); downloadListenerZip(name);});
+    const linkBtn = document.createElement('button'); linkBtn.className='listener-link-btn'; linkBtn.textContent='🔗 リンク';
+    const linkResult = document.createElement('div'); linkResult.className='link-result';
+    linkBtn.addEventListener('click', e=>{e.stopPropagation(); generateListenerLink(name, linkBtn, linkResult);});
     const arrow = document.createElement('span'); arrow.className='collapse-arrow'; arrow.textContent='▼';
 
-    header.appendChild(nameEl); header.appendChild(countEl); header.appendChild(dlBtn); header.appendChild(arrow);
+    header.appendChild(nameEl); header.appendChild(countEl); header.appendChild(dlBtn); header.appendChild(linkBtn); header.appendChild(arrow);
     header.addEventListener('click', ()=>card.classList.toggle('open'));
 
     const giftsEl = document.createElement('div'); giftsEl.className='listener-gifts';
@@ -863,7 +930,7 @@ function renderListenerGrid() {
       giftsEl.appendChild(tag);
     });
 
-    card.appendChild(header); card.appendChild(giftsEl);
+    card.appendChild(header); card.appendChild(linkResult); card.appendChild(giftsEl);
     grid.appendChild(card);
   }
 }
@@ -931,6 +998,118 @@ function triggerDownload(blob, filename) {
   setTimeout(()=>URL.revokeObjectURL(url),3000);
 }
 
+// ===== ダウンロードリンク発行（litterbox.catbox.moe） =====
+// Discordの10MB制限を回避するため、ZIPを外部一時ホストにアップロードしてURLを発行する。
+// litterboxは期限（1h/12h/24h/72h）で自動削除される一時ホスティング。
+// 注意：外部サービスへの依存のため、CORSやサービス側の状態次第で失敗する場合がある。
+async function uploadToLitterbox(blob, filename, time) {
+  const form = new FormData();
+  form.append('reqtype', 'fileupload');
+  form.append('time', time || '72h');
+  form.append('fileToUpload', blob, filename);
+  let res;
+  try {
+    res = await fetch('https://litterbox.catbox.moe/resources/internals/api.php', {
+      method: 'POST', body: form
+    });
+  } catch (err) {
+    throw new Error('通信に失敗しました（CORSまたはネットワークの問題の可能性があります）');
+  }
+  if (!res.ok) throw new Error('サーバーエラー: ' + res.status);
+  const text = (await res.text()).trim();
+  if (!/^https?:\/\//.test(text)) throw new Error(text || 'アップロードに失敗しました');
+  return text;
+}
+
+function copyText(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(
+      () => showToast('コピーしました', 'success'),
+      () => fallbackCopy(text)
+    );
+  } else fallbackCopy(text);
+}
+function fallbackCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); showToast('コピーしました', 'success'); }
+  catch (e) { showToast('コピーに失敗しました', 'error'); }
+  document.body.removeChild(ta);
+}
+
+async function generateListenerLink(name, btnEl, resultEl) {
+  const time = document.getElementById('link-expiry').value;
+  const orig = btnEl.textContent;
+  btnEl.disabled = true; btnEl.textContent = 'アップロード中...';
+  resultEl.className = 'link-result'; resultEl.style.display = 'flex';
+  resultEl.textContent = 'アップロード中...';
+  try {
+    const zip = await buildListenerZip(name);
+    const blob = await zip.generateAsync({type:'blob'});
+    if (blob.size > 1024*1024*1024) throw new Error('ファイルサイズが1GBを超えています（litterboxの上限）');
+    const url = await uploadToLitterbox(blob, `${name}.zip`, time);
+    resultEl.innerHTML = '';
+    const a = document.createElement('a'); a.href = url; a.target = '_blank'; a.rel='noopener'; a.textContent = url;
+    const copyBtn = document.createElement('button'); copyBtn.textContent = 'コピー';
+    copyBtn.addEventListener('click', () => copyText(url));
+    resultEl.appendChild(a); resultEl.appendChild(copyBtn);
+    showToast(`${name} さんのリンクを発行しました`, 'success');
+  } catch (e) {
+    resultEl.className = 'link-result error'; resultEl.style.display = 'flex';
+    resultEl.textContent = '発行に失敗しました：' + (e.message || e);
+    showToast('リンク発行に失敗しました', 'error'); console.error(e);
+  } finally {
+    btnEl.disabled = false; btnEl.textContent = orig;
+  }
+}
+
+async function generateAllLinks() {
+  const names = Object.keys(listenerMap);
+  if (names.length === 0) { showToast('リスナーがいません', 'warn'); return; }
+  const time = document.getElementById('link-expiry').value;
+  const box = document.getElementById('link-results-box');
+  box.style.display = 'block';
+  box.innerHTML = '<h4>🔗 発行結果</h4>';
+  const results = [];
+  for (let i = 0; i < names.length; i++) {
+    const name = names[i];
+    showLoading(`リンクを発行中... (${i+1}/${names.length}) ${name}`);
+    try {
+      const zip = await buildListenerZip(name);
+      const blob = await zip.generateAsync({type:'blob'});
+      if (blob.size > 1024*1024*1024) throw new Error('1GB超過のためスキップ');
+      const url = await uploadToLitterbox(blob, `${name}.zip`, time);
+      results.push({name, url});
+    } catch (e) {
+      results.push({name, error: e.message || String(e)});
+    }
+  }
+  hideLoading();
+  results.forEach(r => {
+    const row = document.createElement('div'); row.className = 'row' + (r.error ? ' error' : '');
+    const nameSpan = document.createElement('span'); nameSpan.className = 'name'; nameSpan.textContent = r.name;
+    row.appendChild(nameSpan);
+    if (r.url) {
+      const a = document.createElement('a'); a.href = r.url; a.target = '_blank'; a.rel='noopener'; a.textContent = r.url;
+      row.appendChild(a);
+    } else {
+      const err = document.createElement('span'); err.className = 'errmsg'; err.textContent = '失敗: ' + r.error;
+      row.appendChild(err);
+    }
+    box.appendChild(row);
+  });
+  const copyAllBtn = document.createElement('button'); copyAllBtn.className = 'copyall-btn';
+  copyAllBtn.textContent = '📋 全リンクをまとめてコピー（Discord貼り付け用）';
+  copyAllBtn.addEventListener('click', () => {
+    const text = results.map(r => r.url ? `${r.name}: ${r.url}` : `${r.name}: （失敗: ${r.error}）`).join('\n');
+    copyText(text);
+  });
+  box.appendChild(copyAllBtn);
+  const okCount = results.filter(r => r.url).length;
+  showToast(`${okCount}/${names.length}件のリンクを発行しました`, okCount === names.length ? 'success' : 'warn');
+}
+
 // ===== RESET =====
 function resetResults() {
   csvLoaded=false; listenerMap={}; adhocGiftMap={};
@@ -938,6 +1117,8 @@ function resetResults() {
   hide('status-bar'); hide('listener-section'); hide('bulk-section');
   hide('adhoc-gift-section'); hide('preset-match-section');
   document.getElementById('listener-grid').innerHTML='';
+  const lrBox = document.getElementById('link-results-box');
+  lrBox.style.display='none'; lrBox.innerHTML='';
   document.getElementById('adhoc-gift-list').innerHTML='';
   document.getElementById('csv-input-preset').value='';
   document.getElementById('csv-input-adhoc').value='';
@@ -968,6 +1149,7 @@ document.getElementById('preset-name-input').addEventListener('keydown', e=>{
 });
 
 document.getElementById('bulk-dl-btn').addEventListener('click', downloadAllZip);
+document.getElementById('bulk-link-btn').addEventListener('click', generateAllLinks);
 
 document.getElementById('csv-clear-btn').addEventListener('click', () => {
   if (!confirm('CSVの読み込み内容をクリアしますか？\n（STEP1で登録した景品名・ファイルはそのまま残ります）')) return;
