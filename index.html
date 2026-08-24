@@ -998,27 +998,79 @@ function triggerDownload(blob, filename) {
   setTimeout(()=>URL.revokeObjectURL(url),3000);
 }
 
-// ===== ダウンロードリンク発行（litterbox.catbox.moe） =====
+// ===== ダウンロードリンク発行（複数の外部一時ホストへフォールバック） =====
 // Discordの10MB制限を回避するため、ZIPを外部一時ホストにアップロードしてURLを発行する。
-// litterboxは期限（1h/12h/24h/72h）で自動削除される一時ホスティング。
-// 注意：外部サービスへの依存のため、CORSやサービス側の状態次第で失敗する場合がある。
-async function uploadToLitterbox(blob, filename, time) {
+// 単一サービス（litterbox.catbox.moe）だけに頼ると、サービス側の不調やCORS制限で
+// 500/412など不安定なエラーが起きやすいため、複数の候補サービスに自動フォールバックする。
+// 各サービスは指定回数リトライし、それでも失敗したら次のサービスへ移る。
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function tryUploadLitterbox(blob, filename, time) {
   const form = new FormData();
   form.append('reqtype', 'fileupload');
   form.append('time', time || '72h');
   form.append('fileToUpload', blob, filename);
-  let res;
-  try {
-    res = await fetch('https://litterbox.catbox.moe/resources/internals/api.php', {
-      method: 'POST', body: form
-    });
-  } catch (err) {
-    throw new Error('通信に失敗しました（CORSまたはネットワークの問題の可能性があります）');
-  }
-  if (!res.ok) throw new Error('サーバーエラー: ' + res.status);
+  const res = await fetch('https://litterbox.catbox.moe/resources/internals/api.php', {
+    method: 'POST', body: form
+  });
+  if (!res.ok) throw new Error('litterbox: サーバーエラー ' + res.status);
   const text = (await res.text()).trim();
-  if (!/^https?:\/\//.test(text)) throw new Error(text || 'アップロードに失敗しました');
+  if (!/^https?:\/\//.test(text)) throw new Error('litterbox: ' + (text || 'アップロードに失敗'));
   return text;
+}
+
+async function tryUploadFileIo(blob, filename) {
+  const form = new FormData();
+  form.append('file', blob, filename);
+  // expires=14d を指定し、初回ダウンロードで消えないようにする
+  const res = await fetch('https://file.io/?expires=14d', { method: 'POST', body: form });
+  if (!res.ok) throw new Error('file.io: サーバーエラー ' + res.status);
+  const data = await res.json();
+  if (!data || !data.success || !data.link) throw new Error('file.io: ' + (data?.message || 'アップロードに失敗'));
+  return data.link;
+}
+
+async function tryUploadTmpfiles(blob, filename) {
+  const form = new FormData();
+  form.append('file', blob, filename);
+  const res = await fetch('https://tmpfiles.org/api/v1/upload', { method: 'POST', body: form });
+  if (!res.ok) throw new Error('tmpfiles: サーバーエラー ' + res.status);
+  const data = await res.json();
+  const url = data?.data?.url;
+  if (!url) throw new Error('tmpfiles: アップロードに失敗');
+  // tmpfiles.org はそのままだと確認ページURL。直接DL用に /dl/ を挟む
+  return url.replace('tmpfiles.org/', 'tmpfiles.org/dl/');
+}
+
+// provider を指定回数リトライしてダメなら null を返す（例外を投げない＝次のproviderへ進める）
+async function retryProvider(fn, label, attempts, onAttempt) {
+  let lastErr;
+  for (let i = 1; i <= attempts; i++) {
+    try {
+      if (onAttempt) onAttempt(`${label}へアップロード中... (${i}/${attempts})`);
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      if (i < attempts) await sleep(1500);
+    }
+  }
+  console.warn(`${label} failed after ${attempts} attempts:`, lastErr);
+  return null;
+}
+
+async function uploadToLitterbox(blob, filename, time, onProgress) {
+  const providers = [
+    { label: 'litterbox.catbox.moe', fn: () => tryUploadLitterbox(blob, filename, time) },
+    { label: 'file.io',              fn: () => tryUploadFileIo(blob, filename) },
+    { label: 'tmpfiles.org',         fn: () => tryUploadTmpfiles(blob, filename) },
+  ];
+  const errors = [];
+  for (const p of providers) {
+    const url = await retryProvider(p.fn, p.label, 2, onProgress);
+    if (url) return url;
+    errors.push(p.label);
+  }
+  throw new Error(`すべてのアップロード先で失敗しました（${errors.join(' → ')}）。時間を置くか、ZIPを直接ダウンロードしてください。`);
 }
 
 function copyText(text) {
@@ -1048,7 +1100,7 @@ async function generateListenerLink(name, btnEl, resultEl) {
     const zip = await buildListenerZip(name);
     const blob = await zip.generateAsync({type:'blob'});
     if (blob.size > 1024*1024*1024) throw new Error('ファイルサイズが1GBを超えています（litterboxの上限）');
-    const url = await uploadToLitterbox(blob, `${name}.zip`, time);
+    const url = await uploadToLitterbox(blob, `${name}.zip`, time, (msg)=>{ resultEl.textContent = msg; });
     resultEl.innerHTML = '';
     const a = document.createElement('a'); a.href = url; a.target = '_blank'; a.rel='noopener'; a.textContent = url;
     const copyBtn = document.createElement('button'); copyBtn.textContent = 'コピー';
@@ -1079,7 +1131,7 @@ async function generateAllLinks() {
       const zip = await buildListenerZip(name);
       const blob = await zip.generateAsync({type:'blob'});
       if (blob.size > 1024*1024*1024) throw new Error('1GB超過のためスキップ');
-      const url = await uploadToLitterbox(blob, `${name}.zip`, time);
+      const url = await uploadToLitterbox(blob, `${name}.zip`, time, (msg)=>{ showLoading(`(${i+1}/${names.length}) ${name}: ${msg}`); });
       results.push({name, url});
     } catch (e) {
       results.push({name, error: e.message || String(e)});
