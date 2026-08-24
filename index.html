@@ -1042,6 +1042,29 @@ async function tryUploadTmpfiles(blob, filename) {
   return url.replace('tmpfiles.org/', 'tmpfiles.org/dl/');
 }
 
+// gofile.io: ゲスト（匿名）アップロード。実質サイズ上限なしを謳っており、
+// 大容量ZIP（〜5GB級）を扱える数少ない無料サービス。まずアップロード先サーバーを
+// 問い合わせてから、そのサーバーへ直接アップロードする2段階構成。
+async function tryUploadGofile(blob, filename) {
+  let server = 'store1';
+  try {
+    const srvRes = await fetch('https://api.gofile.io/getServer');
+    if (srvRes.ok) {
+      const srvData = await srvRes.json();
+      if (srvData?.data?.server) server = srvData.data.server;
+    }
+  } catch (_) { /* サーバー問い合わせに失敗しても既定サーバーで続行 */ }
+
+  const form = new FormData();
+  form.append('file', blob, filename);
+  const res = await fetch(`https://${server}.gofile.io/uploadFile`, { method: 'POST', body: form });
+  if (!res.ok) throw new Error('gofile: サーバーエラー ' + res.status);
+  const data = await res.json();
+  const page = data?.data?.downloadPage;
+  if (!page) throw new Error('gofile: ' + (data?.status || 'アップロードに失敗'));
+  return page;
+}
+
 // provider を指定回数リトライしてダメなら null を返す（例外を投げない＝次のproviderへ進める）
 async function retryProvider(fn, label, attempts, onAttempt) {
   let lastErr;
@@ -1063,6 +1086,7 @@ async function uploadToLitterbox(blob, filename, time, onProgress) {
     { label: 'litterbox.catbox.moe', fn: () => tryUploadLitterbox(blob, filename, time) },
     { label: 'file.io',              fn: () => tryUploadFileIo(blob, filename) },
     { label: 'tmpfiles.org',         fn: () => tryUploadTmpfiles(blob, filename) },
+    { label: 'gofile.io',            fn: () => tryUploadGofile(blob, filename) },
   ];
   const errors = [];
   for (const p of providers) {
@@ -1099,7 +1123,7 @@ async function generateListenerLink(name, btnEl, resultEl) {
   try {
     const zip = await buildListenerZip(name);
     const blob = await zip.generateAsync({type:'blob'});
-    if (blob.size > 1024*1024*1024) throw new Error('ファイルサイズが1GBを超えています（litterboxの上限）');
+    if (blob.size > 5*1024*1024*1024) throw new Error('ファイルサイズが5GBを超えています');
     const url = await uploadToLitterbox(blob, `${name}.zip`, time, (msg)=>{ resultEl.textContent = msg; });
     resultEl.innerHTML = '';
     const a = document.createElement('a'); a.href = url; a.target = '_blank'; a.rel='noopener'; a.textContent = url;
@@ -1130,7 +1154,7 @@ async function generateAllLinks() {
     try {
       const zip = await buildListenerZip(name);
       const blob = await zip.generateAsync({type:'blob'});
-      if (blob.size > 1024*1024*1024) throw new Error('1GB超過のためスキップ');
+      if (blob.size > 5*1024*1024*1024) throw new Error('5GB超過のためスキップ');
       const url = await uploadToLitterbox(blob, `${name}.zip`, time, (msg)=>{ showLoading(`(${i+1}/${names.length}) ${name}: ${msg}`); });
       results.push({name, url});
     } catch (e) {
