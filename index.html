@@ -414,9 +414,10 @@
         <option value="1h">1時間</option>
         <option value="12h">12時間</option>
         <option value="24h">24時間</option>
-        <option value="72h" selected>72時間（最大）</option>
+        <option value="72h" selected>72時間</option>
+        <option value="7d">7日間</option>
       </select>
-      <span>※ litterbox.catbox.moe にアップロード。期限切れで自動削除されます</span>
+      <span>※ 期限切れで自動削除されます。7日間を選ぶと file.io を優先してアップロードします（litterbox.catbox.moe は72時間が上限のため）</span>
     </div>
     <div class="listener-grid" id="listener-grid"></div>
   </section>
@@ -1019,11 +1020,11 @@ async function tryUploadLitterbox(blob, filename, time) {
   return text;
 }
 
-async function tryUploadFileIo(blob, filename) {
+async function tryUploadFileIo(blob, filename, expires) {
   const form = new FormData();
   form.append('file', blob, filename);
-  // expires=14d を指定し、初回ダウンロードで消えないようにする
-  const res = await fetch('https://file.io/?expires=14d', { method: 'POST', body: form });
+  // expires を指定（例: "7d"）。未指定時は14日
+  const res = await fetch(`https://file.io/?expires=${encodeURIComponent(expires || '14d')}`, { method: 'POST', body: form });
   if (!res.ok) throw new Error('file.io: サーバーエラー ' + res.status);
   const data = await res.json();
   if (!data || !data.success || !data.link) throw new Error('file.io: ' + (data?.message || 'アップロードに失敗'));
@@ -1082,12 +1083,21 @@ async function retryProvider(fn, label, attempts, onAttempt) {
 }
 
 async function uploadToLitterbox(blob, filename, time, onProgress) {
-  const providers = [
-    { label: 'litterbox.catbox.moe', fn: () => tryUploadLitterbox(blob, filename, time) },
-    { label: 'file.io',              fn: () => tryUploadFileIo(blob, filename) },
-    { label: 'tmpfiles.org',         fn: () => tryUploadTmpfiles(blob, filename) },
-    { label: 'gofile.io',            fn: () => tryUploadGofile(blob, filename) },
-  ];
+  // litterbox.catbox.moe は72時間が上限のサービス仕様のため、
+  // それを超える期限（7日など）が指定された場合は、より長い保存に対応した
+  // file.io を優先し、litterboxは使わない順序にする。
+  const providers = (time === '7d')
+    ? [
+        { label: 'file.io',              fn: () => tryUploadFileIo(blob, filename, '7d') },
+        { label: 'gofile.io',            fn: () => tryUploadGofile(blob, filename) },
+        { label: 'tmpfiles.org',         fn: () => tryUploadTmpfiles(blob, filename) },
+      ]
+    : [
+        { label: 'litterbox.catbox.moe', fn: () => tryUploadLitterbox(blob, filename, time) },
+        { label: 'file.io',              fn: () => tryUploadFileIo(blob, filename) },
+        { label: 'tmpfiles.org',         fn: () => tryUploadTmpfiles(blob, filename) },
+        { label: 'gofile.io',            fn: () => tryUploadGofile(blob, filename) },
+      ];
   const errors = [];
   for (const p of providers) {
     const url = await retryProvider(p.fn, p.label, 2, onProgress);
